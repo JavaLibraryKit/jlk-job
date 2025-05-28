@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.liujinnan.jlk.job.register.JobRegister,\
+cn.liujinnan.jlk.job.factory.JobFactory

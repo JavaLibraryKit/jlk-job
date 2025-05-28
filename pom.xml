@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>cn.liujinnan.java.library.kit</groupId>
+    <artifactId>jlk-job</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>jlk-job</name>
+    <packaging>jar</packaging>
+    <inceptionYear>2025</inceptionYear>
+
+    <description>
+        java library kit.
+        Based on elastic-job, provide spring annotation method to create tasks.
+    </description>
+
+    <!-- Sonatype 要求必须包含 开源协议 -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <!-- Sonatype 要求必须包含 开发者信息 -->
+    <developers>
+        <developer>
+            <name>LiuJinan</name>
+            <email>liujinnan.cn@gmail.com</email>
+            <url>https://github.com/JavaLibraryKit</url>
+        </developer>
+    </developers>
+
+    <!-- Sonatype 要求必须包含 SCM（源码管理） -->
+    <scm>
+        <url>https://github.com/JavaLibraryKit/jlk-job.git</url>
+        <connection>git@github.com:JavaLibraryKit/jlk-job.git</connection>
+        <developerConnection>https://github.com/JavaLibraryKit</developerConnection>
+    </scm>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <elasticjob.version>3.0.4</elasticjob.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.shardingsphere.elasticjob</groupId>
+            <artifactId>elasticjob-lite-spring-boot-starter</artifactId>
+            <version>${elasticjob.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.shardingsphere.elasticjob</groupId>
+            <artifactId>elasticjob-lite-lifecycle</artifactId>
+            <version>${elasticjob.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.17.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+    </dependencies>
+
+
+    <profiles>
+        <profile>
+            <!-- 发布Maven Central, 必须有这几个插件(gpg插件, source源码插件, central发布插件, javadoc插件) -->
+            <id>sonatype</id>
+            <build>
+                <plugins>
+                    <!-- gpg插件 -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <configuration>
+                            <gpgArguments>
+                                <!--
+                                    pinentry-mode=loopback: 将密码直接通过命令行或程序传递
+                                    maven setting.xml需要配置
+                                    <server>
+                                        <id>gpg.passphrase</id>
+                                        <passphrase>gpg password</passphrase>
+                                    </server>
+                                 -->
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!--   source源码插件 -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!--   central发布插件    -->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <!-- publishingServerId 需与settings.xml的server id一致 -->
+                            <publishingServerId>sonatype</publishingServerId>
+                        </configuration>
+                    </plugin>
+                    <!--   javadoc插件 -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.11.2</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
