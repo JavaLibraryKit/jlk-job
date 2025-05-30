@@ -63,7 +63,7 @@ public class JobRegister implements CommandLineRunner {
             if (Objects.isNull(elasticJob)) {
                 continue;
             }
-
+            // @ElasticJobConfiguration
             JobAnnotation jobAnnotation = elasticJob.getClass().getAnnotation(JobAnnotation.class);
             if (Objects.isNull(jobAnnotation)) {
                 continue;
@@ -132,6 +132,10 @@ public class JobRegister implements CommandLineRunner {
     }
 
     private Map<String, String> getJobProp(JobAnnotation jobAnnotation, Map<String, Object> allJobProperties) {
+
+        // error typ 全局配置
+        // todo 优先级  jobName配置文件 > 注解配置 > 全局配置
+
         Map<String, String> propMap = new HashMap<>();
         JobProp[] props = jobAnnotation.props();
         if (props != null) {
@@ -146,6 +150,7 @@ public class JobRegister implements CommandLineRunner {
 
         String errorType = jobAnnotation.jobErrorHandlerType();
         if (StringUtils.isNotBlank(errorType)) {
+            // 获取告警策略需要的配置
             ElasticJobServiceLoader.getCachedTypedServiceInstance(JobErrorHandler.class, errorType).ifPresent(jobErrorHandler -> {
                 if (jobErrorHandler instanceof JobPropErrorHandler) {
                     JobPropErrorHandler jobPropErrorHandler = (JobPropErrorHandler)jobErrorHandler;

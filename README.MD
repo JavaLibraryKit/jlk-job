@@ -21,7 +21,7 @@
  * @see cn.liujinnan.jlk.job.annotation.JobAnnotation
  */
 @Component
-@JobAnnotation(jobName = "name", cron = "0/10 * * * * ?", shardingTotalCount = 1, description = "bbb", shardingTotalCount = 3, shardingItemParameters = "0=a,1=b,3=c")
+@JobAnnotation(cron = "0/10 * * * * ?", shardingTotalCount = 1, description = "bbb", shardingTotalCount = 3, shardingItemParameters = "0=a,1=b,3=c")
 public class Test2 implements AbstractSimpleJob {
     @Override
     public void executeJob(ShardingContext shardingContext) {
@@ -46,7 +46,7 @@ public class Test2 implements AbstractSimpleJob {
 ```
 #### 配置
 ```properties
-# 必要配置
+# 必要配置 Necessary Configuration
 # zookeeper 多个逗号分隔
 elasticjob.reg-center.server-lists=ip1:port1,ip2:port2
 elasticjob.reg-center.namespace=namespace
@@ -55,17 +55,41 @@ elasticjob.reg-center.namespace=namespace
 ### 2. 错误处理
 
 #### 钉钉预警
-jobErrorHandlerType="DT"，发送钉钉预警
+jobErrorHandlerType="DT"，发送钉钉预警。多种方式配置
+
+* 第一种
 ```java
-@JobAnnotation(jobErrorHandlerType="DT")
-
-
-// 可在job后台单独配置作业属性
+// Configure the jobErrorHandlerType attribute in the annotation
+// 在注解中配置jobErrorHandlerType
+@Component
+@JobAnnotation(cron = "0/10 * * * * ?", jobErrorHandlerType = "DT")
+public class Test2 implements AbstractSimpleJob {
+    @Override
+    public void executeJob(ShardingContext shardingContext) {
+        // running
+    }
+}
 ```
-
 ```properties
-# 需要配置钉钉url，或者作业后台配置作业属性
+# 全局钉钉url配置
 elasticjob.jobs.props.dingtalk.webhook=https://oapi.dingtalk.com/robot/send?access_token=xxx
 ```
+
+* 第二种
+```java
+// Configure the jobErrorHandlerType attribute in the annotation
+// 在注解中配置jobErrorHandlerType
+@Component
+@JobAnnotation(cron = "0/10 * * * * ?", jobErrorHandlerType = "DT", props = {
+        @JobProp(key = "dingtalk.webhook", value = "https://oapi.dingtalk.com/robot/send?access_token=xxx")
+})
+public class Test2 implements AbstractSimpleJob {
+    @Override
+    public void executeJob(ShardingContext shardingContext) {
+        // running
+    }
+}
+```
+
 作业属性配置
 ![job属性配置](static/img/job_1.png)
