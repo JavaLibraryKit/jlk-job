@@ -15,6 +15,7 @@ public interface JobPropErrorHandler extends JobErrorHandler {
 
     /**
      * 错误处理作业属性配置前缀
+     * 所有前缀 前面还需拼接 elasticjob.jobs.props
      * @return list
      */
     default List<String> propsPrefixes(){

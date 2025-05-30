@@ -16,8 +16,8 @@ import java.lang.annotation.*;
 public @interface JobAnnotation {
 
     /**
-     * The default value is the class name
-     * 默认类名
+     * The default value is the simple class name. For example, class TestJob.java, jobName="TestJob"
+     * 默认类名. 例如： TestJob.java , 则 jobName = "TestJob"
      * @return jobName
      */
     String jobName() default "";
@@ -54,14 +54,6 @@ public @interface JobAnnotation {
      * @return Job properties
      */
     JobProp[] props() default {};
-
-    /**
-     * The attribute prefix unique to the current task
-     * 独属于当前任务的属性前缀
-     *
-     * @return Job properties
-     */
-    String[] propsPrefixes() default {};
 
     /**
      * Sharding total count.

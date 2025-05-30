@@ -99,6 +99,7 @@ public class JobDingTalkErrorHandler implements JobPropErrorHandler {
 
     @Override
     public List<String> propsPrefixes() {
+        // 前缀为 elasticjob.jobs.props.dingtalk.
         return Collections.singletonList(JobDingtalkPropertiesConstants.PREFIX);
     }
 

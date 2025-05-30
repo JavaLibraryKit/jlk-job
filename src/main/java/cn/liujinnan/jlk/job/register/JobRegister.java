@@ -46,7 +46,7 @@ public class JobRegister implements CommandLineRunner {
     public void run(String... args) throws Exception {
         ZookeeperRegistryCenter zookeeperRegistryCenter = applicationContext.getBean(ZookeeperRegistryCenter.class);
         Map<String, ElasticJob> map = applicationContext.getBeansOfType(ElasticJob.class);
-        Map<String, Object> allJobProperties = getAllJobProp();
+        Map<String, Object> commonJobProp = getPropStartWith("elasticjob.jobs.props.");
         // 后面 ElasticJobServiceLoader.getCachedTypedServiceInstance 需要用到
         ElasticJobServiceLoader.registerTypedService(JobErrorHandler.class);
 
@@ -63,7 +63,7 @@ public class JobRegister implements CommandLineRunner {
             if (Objects.isNull(elasticJob)) {
                 continue;
             }
-
+            // @ElasticJobConfiguration
             JobAnnotation jobAnnotation = elasticJob.getClass().getAnnotation(JobAnnotation.class);
             if (Objects.isNull(jobAnnotation)) {
                 continue;
@@ -91,7 +91,7 @@ public class JobRegister implements CommandLineRunner {
                     .overwrite(jobAnnotation.overwrite());
 
             // job properties
-            Map<String, String> jobProp = getJobProp(jobAnnotation, allJobProperties);
+            Map<String, String> jobProp = getJobProp(jobAnnotation, commonJobProp);
             jobProp.forEach(builder::setProperty);
 
             JobConfiguration jobConfiguration = builder.build();
@@ -114,14 +114,21 @@ public class JobRegister implements CommandLineRunner {
         return null;
     }
 
-    private Map<String, Object> getAllJobProp() {
-        // 加载配置。'elasticjob.jobs.props.' 开头
+    /**
+     * Loading task common configuration.
+     * All configurations starting with 'elasticjob.jobs.props.'
+     * 加载公共配置。'elasticjob.jobs.props.' 开头
+     * 返回
+     * @return map
+     */
+    private Map<String, Object> getPropStartWith(String startWith) {
+        // 加载配置。'elasticjob.jobs.props.' 或 'elasticjob.jobs.${jobName}.props.'开头
         Map<String, Object> properties = new HashMap<>();
         if (environment instanceof ConfigurableEnvironment) {
             for (PropertySource<?> propertySource : ((ConfigurableEnvironment) environment).getPropertySources()) {
                 if (propertySource instanceof EnumerablePropertySource) {
                     for (String name : ((EnumerablePropertySource<?>) propertySource).getPropertyNames()) {
-                        if (Objects.nonNull(name) && name.contains("elasticjob.jobs.props.")) {
+                        if (Objects.nonNull(name) && name.startsWith("elasticjob.jobs.props.")) {
                             properties.put(name.replace("elasticjob.jobs.props.", ""), propertySource.getProperty(name));
                         }
                     }
@@ -131,21 +138,17 @@ public class JobRegister implements CommandLineRunner {
         return properties;
     }
 
-    private Map<String, String> getJobProp(JobAnnotation jobAnnotation, Map<String, Object> allJobProperties) {
-        Map<String, String> propMap = new HashMap<>();
-        JobProp[] props = jobAnnotation.props();
-        if (props != null) {
-            for (JobProp prop : props) {
-                propMap.put(prop.key(), prop.value());
-            }
-        }
-        List<String> propsPrefixes = new ArrayList<>();
-        Optional.ofNullable(jobAnnotation.propsPrefixes()).ifPresent(array -> {
-            propsPrefixes.addAll(Arrays.asList(array));
-        });
+    private Map<String, String> getJobProp(JobAnnotation jobAnnotation, Map<String, Object> commonJobProp) {
 
+        // 优先级  jobName属性配置(elasticjob.jobs.${jobName}.props.) > 注解配置 > 全局job属性配置(elasticjob.jobs.props.)
+
+        // 当前任务的属性前缀
+        List<String> propsPrefixes = new ArrayList<>();
+
+        // 加载错误处理类需要的属性前缀。 全局job属性配置(elasticjob.jobs.props.)，error typ 全局配置
         String errorType = jobAnnotation.jobErrorHandlerType();
         if (StringUtils.isNotBlank(errorType)) {
+            // 获取配置的告警策略需要的配置前缀
             ElasticJobServiceLoader.getCachedTypedServiceInstance(JobErrorHandler.class, errorType).ifPresent(jobErrorHandler -> {
                 if (jobErrorHandler instanceof JobPropErrorHandler) {
                     JobPropErrorHandler jobPropErrorHandler = (JobPropErrorHandler)jobErrorHandler;
@@ -157,11 +160,29 @@ public class JobRegister implements CommandLineRunner {
             });
         }
 
-        allJobProperties.forEach((key, val) -> {
+        // 当前任务的prop配置。 根据优先级倒序加载，优先级低的将被覆盖
+        Map<String, String> jobPropMap = new HashMap<>();
+        // 1. 全局job属性配置(elasticjob.jobs.props.)
+        commonJobProp.forEach((key, val) -> {
             if (propsPrefixes.stream().anyMatch(key::startsWith)) {
-                propMap.put(key, (String) val);
+                jobPropMap.put(key, (String) val);
             }
         });
-        return propMap;
+
+       // 2. 注解配置
+        JobProp[] props = jobAnnotation.props();
+        if (props != null) {
+            for (JobProp prop : props) {
+                jobPropMap.put(prop.key(), prop.value());
+            }
+        }
+        // 3. jobName属性配置(elasticjob.jobs.${jobName}.props.)
+        String jobProps = String.format("elasticjob.jobs.%s.props.", jobAnnotation.jobName());
+        Map<String, Object> propStartWith = getPropStartWith(jobProps);
+        propStartWith.forEach((key, val) -> {
+            jobPropMap.put(key, (String) val);
+        });
+
+        return jobPropMap;
     }
 }
