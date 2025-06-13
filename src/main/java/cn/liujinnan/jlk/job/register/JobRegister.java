@@ -11,11 +11,13 @@ import org.apache.shardingsphere.elasticjob.api.JobConfiguration;
 import org.apache.shardingsphere.elasticjob.error.handler.JobErrorHandler;
 import org.apache.shardingsphere.elasticjob.infra.spi.ElasticJobServiceLoader;
 import org.apache.shardingsphere.elasticjob.lite.api.bootstrap.impl.ScheduleJobBootstrap;
+import org.apache.shardingsphere.elasticjob.lite.spring.boot.job.ElasticJobProperties;
 import org.apache.shardingsphere.elasticjob.reg.zookeeper.ZookeeperRegistryCenter;
 import org.apache.shardingsphere.elasticjob.tracing.api.TracingConfiguration;
 import org.springframework.aop.framework.Advised;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.ApplicationContext;
@@ -35,12 +37,24 @@ import java.util.*;
  */
 @Configuration
 @ConditionalOnExpression("'${elasticjob.reg-center.server-lists}'.length() > 0 && '${elasticjob.reg-center.namespace}'.length()>0")
-public class JobRegister implements CommandLineRunner {
+public class JobRegister implements CommandLineRunner , BeanPostProcessor {
 
     @Autowired
     private ApplicationContext applicationContext;
     @Autowired
     private Environment environment;
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) {
+        if (bean instanceof ElasticJobProperties) {
+            // 重置 ElasticJobProperties
+            // 配置了elasticjob.jobs.${JobName}.props.key=val 启动时会注册${JobName}。 重置阻止${JobName}注册，只能通过注解注册
+            ElasticJobProperties props = new ElasticJobProperties();
+            props.setJobs(new HashMap<>());
+            return props;
+        }
+        return bean;
+    }
 
     @Override
     public void run(String... args) throws Exception {
