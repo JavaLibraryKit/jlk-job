@@ -37,7 +37,7 @@ import java.util.*;
  */
 @Configuration
 @ConditionalOnExpression("'${elasticjob.reg-center.server-lists}'.length() > 0 && '${elasticjob.reg-center.namespace}'.length()>0")
-public class JobRegister implements CommandLineRunner , BeanPostProcessor {
+public class JobRegister implements CommandLineRunner, BeanPostProcessor {
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -82,7 +82,6 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
             if (Objects.isNull(jobAnnotation)) {
                 continue;
             }
-
             String jobName = StringUtils.isBlank(jobAnnotation.jobName()) ? elasticJob.getClass().getSimpleName() : jobAnnotation.jobName();
             //job任务配置
 
@@ -105,7 +104,7 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
                     .overwrite(jobAnnotation.overwrite());
 
             // job properties
-            Map<String, String> jobProp = getJobProp(jobAnnotation, commonJobProp);
+            Map<String, String> jobProp = getJobProp(jobAnnotation, commonJobProp, jobName);
             jobProp.forEach(builder::setProperty);
 
             JobConfiguration jobConfiguration = builder.build();
@@ -133,6 +132,7 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
      * All configurations starting with 'elasticjob.jobs.props.'
      * 加载公共配置。'elasticjob.jobs.props.' 开头
      * 返回
+     *
      * @return map
      */
     private Map<String, Object> getPropStartWith(String startWith) {
@@ -142,8 +142,8 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
             for (PropertySource<?> propertySource : ((ConfigurableEnvironment) environment).getPropertySources()) {
                 if (propertySource instanceof EnumerablePropertySource) {
                     for (String name : ((EnumerablePropertySource<?>) propertySource).getPropertyNames()) {
-                        if (Objects.nonNull(name) && name.startsWith("elasticjob.jobs.props.")) {
-                            properties.put(name.replace("elasticjob.jobs.props.", ""), propertySource.getProperty(name));
+                        if (Objects.nonNull(name) && name.startsWith(startWith)) {
+                            properties.put(name.replace(startWith, ""), propertySource.getProperty(name));
                         }
                     }
                 }
@@ -152,26 +152,27 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
         return properties;
     }
 
-    private Map<String, String> getJobProp(JobAnnotation jobAnnotation, Map<String, Object> commonJobProp) {
+    private Map<String, String> getJobProp(JobAnnotation jobAnnotation, Map<String, Object> commonJobProp, String jobName) {
 
         // 优先级  jobName属性配置(elasticjob.jobs.${jobName}.props.) > 注解配置 > 全局job属性配置(elasticjob.jobs.props.)
 
-        // 当前任务的属性前缀
+        // 错误处理类的属性前缀
         List<String> propsPrefixes = new ArrayList<>();
 
         // 加载错误处理类需要的属性前缀。 全局job属性配置(elasticjob.jobs.props.)，error typ 全局配置
         String errorType = jobAnnotation.jobErrorHandlerType();
         if (StringUtils.isNotBlank(errorType)) {
             // 获取配置的告警策略需要的配置前缀
-            ElasticJobServiceLoader.getCachedTypedServiceInstance(JobErrorHandler.class, errorType).ifPresent(jobErrorHandler -> {
-                if (jobErrorHandler instanceof JobPropErrorHandler) {
-                    JobPropErrorHandler jobPropErrorHandler = (JobPropErrorHandler)jobErrorHandler;
-                    List<String> prefixes = jobPropErrorHandler.propsPrefixes();
-                    if (!CollectionUtils.isEmpty(prefixes)){
-                        propsPrefixes.addAll(prefixes);
-                    }
-                }
-            });
+            ElasticJobServiceLoader.getCachedTypedServiceInstance(JobErrorHandler.class, errorType)
+                    .ifPresent(jobErrorHandler -> {
+                        if (jobErrorHandler instanceof JobPropErrorHandler) {
+                            JobPropErrorHandler jobPropErrorHandler = (JobPropErrorHandler) jobErrorHandler;
+                            List<String> prefixes = jobPropErrorHandler.propsPrefixes();
+                            if (!CollectionUtils.isEmpty(prefixes)) {
+                                propsPrefixes.addAll(prefixes);
+                            }
+                        }
+                    });
         }
 
         // 当前任务的prop配置。 根据优先级倒序加载，优先级低的将被覆盖
@@ -183,7 +184,7 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
             }
         });
 
-       // 2. 注解配置
+        // 2. 注解配置
         JobProp[] props = jobAnnotation.props();
         if (props != null) {
             for (JobProp prop : props) {
@@ -191,7 +192,7 @@ public class JobRegister implements CommandLineRunner , BeanPostProcessor {
             }
         }
         // 3. jobName属性配置(elasticjob.jobs.${jobName}.props.)
-        String jobProps = String.format("elasticjob.jobs.%s.props.", jobAnnotation.jobName());
+        String jobProps = String.format("elasticjob.jobs.%s.props.", jobName);
         Map<String, Object> propStartWith = getPropStartWith(jobProps);
         propStartWith.forEach((key, val) -> {
             jobPropMap.put(key, (String) val);

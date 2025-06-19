@@ -52,7 +52,7 @@ elasticjob.reg-center.server-lists=ip1:port1,ip2:port2
 elasticjob.reg-center.namespace=namespace
 ```
 
-### 2. 错误处理
+### 2. 自定义错误处理
 
 #### 钉钉预警
 jobErrorHandlerType="DT"，发送钉钉预警。多种方式配置
