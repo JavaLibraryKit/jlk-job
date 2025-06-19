@@ -6,7 +6,7 @@
 
     <groupId>cn.liujinnan.java.library.kit</groupId>
     <artifactId>jlk-job</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>jlk-job</name>
     <packaging>jar</packaging>
     <inceptionYear>2025</inceptionYear>

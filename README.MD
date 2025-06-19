@@ -55,7 +55,8 @@ elasticjob.reg-center.namespace=namespace
 ### 2. 自定义错误处理
 
 #### 钉钉预警
-jobErrorHandlerType="DT"，发送钉钉预警。多种方式配置
+jobErrorHandlerType="DT"，发送钉钉预警。
+多种方式配置钉钉url
 
 * 第一种
 ```java
@@ -78,7 +79,7 @@ elasticjob.jobs.props.dingtalk.webhook=https://oapi.dingtalk.com/robot/send?acce
 * 第二种
 ```java
 // Configure the jobErrorHandlerType attribute in the annotation
-// 在注解中配置jobErrorHandlerType
+// 在注解中配置jobErrorHandlerType、并配置dingtalk.webhook，此处的dingtalk.webhook配置只对当前任务生效
 @Component
 @JobAnnotation(cron = "0/10 * * * * ?", jobErrorHandlerType = "DT", props = {
         @JobProp(key = "dingtalk.webhook", value = "https://oapi.dingtalk.com/robot/send?access_token=xxx")
@@ -89,6 +90,28 @@ public class Test2 implements AbstractSimpleJob {
         // running
     }
 }
+```
+
+* 第三种
+
+```java
+// Configure the jobErrorHandlerType attribute in the annotation
+// 在注解中配置jobErrorHandlerType
+// jobName不设置时，默认值为类名。 getSimpleName()
+@Component
+@JobAnnotation(jobName="Test2", cron = "0/10 * * * * ?", jobErrorHandlerType = "DT")
+public class Test2 implements AbstractSimpleJob {
+    @Override
+    public void executeJob(ShardingContext shardingContext) {
+        // running
+    }
+}
+```
+
+* 
+```properties
+# ${jobName} 替换为任务名
+elasticjob.jobs.Test2.props.dingtalk.webhook=https://oapi.dingtalk.com/robot/send?access_token=xxx
 ```
 
 作业属性配置
